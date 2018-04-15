@@ -448,8 +448,8 @@
 		add:"add",
 		reset:"reset",
 		remove:"remove",
-		deleterun:"delete"
-		
+		deleterun:"delete",
+		get:"get"
 	}
 	
 	//必須のメソッド
@@ -565,6 +565,8 @@
 		//
 		//返値:
 		//Boolean : 稼働成否
+		//返値(getの場合):
+		//Function : 格納された関数
 		//======================================
 		if(getValueType(actualObj[param]) != "string"){
 			getErrorMessageInner("UM-TS-1");
@@ -588,6 +590,12 @@
 			break;
 			case RunTypeNameList.deleterun:
 				result = deleteMethosGroupInner(groupname);
+			break;
+			case RunTypeNameList.get:
+				if(result = new userSettingMethodsGroup[groupname]){
+					result = new userSettingMethodsGroup[groupname][param];
+				}
+				if(!result)result = new Function();
 			break;
 			default:
 				getErrorMessageInner("UE-TR-1",runtype);

@@ -413,9 +413,27 @@
 	}
 	this.Error = ErrorObj;
 
+	//==========================================
+	//独自オブジェクト基本機能
+	//==========================================
+	//必須エスケープ文設定
+	var NecessaryEacapeList = {
+		prefix:"%",
+		suffix:";",
+		braceL:"{",
+		braceR:"}",
+		per:"%",
+		semicolon:";"
+	}
+	
+	var EacapeList = {
+		
+	}
+	
+	addNecessaryElements(NecessaryEacapeList,EacapeList);
 	
 	//==========================================
-	//メソッド設定 基本機能
+	//標準装備メソッド設定 基本機能
 	//=========================================
 	
 	//ファイル読み込み時の設定ファイル
@@ -441,6 +459,59 @@
 			throw new Error("This browser does not support XMLHttpRequest.");
 		};
 	}
+
+	//XMLリクエストを送るメソッド　ブラウザバージョン対応
+	function textloadInner(source){
+		//======================================
+		//引数
+		//source : String ソースのURL
+		//
+		//コールバック関数
+		//received : 引数XMLオブジェクト
+		//======================================
+		ResponseState.isLoaded = false;
+		var existSource = true;
+		if(!source){
+			existSource = false;
+		}else if(getValueType(source) != "string"){
+			getErrorMessageInner("UM-TS-2",[getValueType(source)]);
+		}else if(source.length < 1){
+			existSource = false;
+		}
+		if(!existSource){
+			if(textSetting.Source.length < 1){
+				getErrorMessageInner("UM-TT-1");
+				return;
+			}
+			source = textSetting.Source;
+		}
+		
+		var xhr = new XMLHttpRequest();
+		xhr.onreadystatechange = function(){
+				if (xhr.readyState === 4 && xhr.status === 200){
+					if(!ResponseState.isLoaded){
+						ResponseState.isLoaded = true;
+						ResponseState.result = xhr;
+						userMethods.received(xhr);
+					}
+					
+				}
+			}
+			xhr.addEventListener("load", function(){
+				if(!ResponseState.isLoaded){
+					ResponseState.isLoaded = true;
+					ResponseState.result = xhr;
+					userMethods.received(xhr);
+				}
+			});
+		xhr.open("get", "source");
+		xhr.send();
+	}
+	
+	
+	//==========================================
+	//カスタムメソッド設定 基本機能
+	//=========================================
 	
 	//メソッドに対する動作指定名称
 	var RunTypeNameList = {
@@ -506,53 +577,7 @@
 	//必須メソッドグループをメソッドグループに追加
 	addNecessaryElements(NeccessarySettingActualMethodsGroup,UserSettingActualMethodsGroup);	
 	
-	//XMLリクエストを送るメソッド　ブラウザバージョン対応
-	function textloadInner(source){
-		//======================================
-		//引数
-		//source : String ソースのURL
-		//
-		//コールバック関数
-		//received : 引数XMLオブジェクト
-		//======================================
-		ResponseState.isLoaded = false;
-		var existSource = true;
-		if(!source){
-			existSource = false;
-		}else if(getValueType(source) != "string"){
-			getErrorMessageInner("UM-TS-2",[getValueType(source)]);
-		}else if(source.length < 1){
-			existSource = false;
-		}
-		if(!existSource){
-			if(textSetting.Source.length < 1){
-				getErrorMessageInner("UM-TT-1");
-				return;
-			}
-			source = textSetting.Source;
-		}
-		
-		var xhr = new XMLHttpRequest();
-		xhr.onreadystatechange = function(){
-				if (xhr.readyState === 4 && xhr.status === 200){
-					if(!ResponseState.isLoaded){
-						ResponseState.isLoaded = true;
-						ResponseState.result = xhr;
-						userMethods.received(xhr);
-					}
-					
-				}
-			}
-			xhr.addEventListener("load", function(){
-				if(!ResponseState.isLoaded){
-					ResponseState.isLoaded = true;
-					ResponseState.result = xhr;
-					userMethods.received(xhr);
-				}
-			});
-		xhr.open("get", "source");
-		xhr.send();
-	}
+
 	
 	//メソッド及びメソッドグループの追加削除を行う諸機能のハブ
 	function addMethosHubInner(parentMethodName,param,func,runtype){
@@ -863,42 +888,68 @@
 		//======================================
 		return function(param,func){addMethosHubInner(parentMethodName,param,func,runtype)};
 	}
+	
+	var defaultFunctionList(){
+		getXMLObject:textloadInner
+		
+		
+	}
+	
+	//初期設定された関数のリストのクローンを返す
+	function getCloneDefaultFunctionAllInner(){
+		//======================================
+		//返値
+		//Object : 初期設定された関数を格納したオブジェクト
+		//======================================				
+		var result = new Object();
+		for(var i in defaultFunctionList){
+			result[i] = new defaultFunctionList[i];
+		}
+		return result;
+	}
+	
+	//初期設定された関数のクローンを返す
+	function getCloneDefaultFunctionInner(funcname){
+		//======================================
+		//引数
+		//funcname : String 関数名
+		//
+		//返値
+		//Function : 該当する関数
+		//======================================		
+		if(getValueType(funcname) != "string"){
+			getErrorMessageInner("UM-TS-1");
+			return (new Function());
+		}
+		var result = new Function();
+		if(defaultFunctionList[funcname]){
+			result = new defaultFunctionList[funcname]
+		}
+		return result
+	}
+	
+	
 	//==========================================
 	//プロパティ設定 外出し
 	//=========================================
 	
 	//変更ができない固定メソッド
 	var FreezeMethods = {
-		sucessMethodsControler:successMethodsInner
+		sucessMethodsControler:successMethodsInner,
+		getDefaultMethod:getCloneDefaultFunctionInner,
+		getAllDefaultMethod:getCloneDefaultFunctionAllInner
 	}	
 
 	if(Object.freeze){
 		Object.freeze(FreezeMethods);
 	}
-	this.Methods = ErrorObj;	
+	this.Methods = FreezeMethods;	
 	
 	//==========================================
 	//独自オブジェクト外出し
 	//==========================================
 
-	//==========================================
-	//独自オブジェクト基本機能
-	//==========================================
-	//必須エスケープ文設定
-	var NecessaryEacapeList = {
-		prefix:"%",
-		suffix:";",
-		braceL:"{",
-		braceR:"}",
-		per:"%",
-		semicolon:";"
-	}
-	
-	var EacapeList = {
-		
-	}
-	
-	addNecessaryElements(NecessaryEacapeList,EacapeList);
+
 	//==========================================
 	//補助メソッド
 	//=========================================
